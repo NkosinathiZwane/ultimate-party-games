@@ -28,6 +28,11 @@ function App() {
     }
   };
 
+  const resetAgeVerification = () => {
+    setIsAgeVerified(false);
+    setShowAgeModal(false);
+  };
+
   return (
     <Router>
       <div className="App">
@@ -36,7 +41,10 @@ function App() {
             path="/" 
             element={
               <>
-                <LandingPage onEnterGameZone={handleEnterGameZone} />
+                <LandingPage 
+                  onEnterGameZone={handleEnterGameZone}
+                  onReset={resetAgeVerification}
+                />
                 {showAgeModal && (
                   <AgeVerificationModal onVerify={handleAgeVerification} />
                 )}
@@ -45,7 +53,7 @@ function App() {
           />
           {isAgeVerified && (
             <>
-              <Route path="/menu" element={<GameMenu />} />
+              <Route path="/menu" element={<GameMenu onReset={resetAgeVerification} />} />
               <Route path="/truths-and-dares" element={<TruthsAndDares />} />
               <Route path="/31-seconds" element={<ThirtyOneSeconds />} />
               <Route path="/6-seconds" element={<SixSeconds />} />

@@ -19,6 +19,7 @@ const TruthsAndDares = () => {
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [currentType, setCurrentType] = useState('');
+  const [usedQuestions, setUsedQuestions] = useState({ truth: [], dare: [] });
 
   const addPlayer = () => {
     if (playerInput.trim() && !players.includes(playerInput.trim())) {
@@ -53,12 +54,28 @@ const TruthsAndDares = () => {
     setShowPlayerModal(true);
   };
 
-  const handleChooseAction = (type) => {
+  const getRandomQuestion = (type) => {
     const questions = gameContent.truthsAndDares[gameMode][type];
-    const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
+    const availableQuestions = questions.filter(q => !usedQuestions[type].includes(q));
+    
+    if (availableQuestions.length === 0) {
+      // Reset used questions if we've gone through all
+      setUsedQuestions(prev => ({ ...prev, [type]: [] }));
+      return questions[Math.floor(Math.random() * questions.length)];
+    }
+    
+    return availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
+  };
+
+  const handleChooseAction = (type) => {
+    const randomQuestion = getRandomQuestion(type);
     
     setCurrentQuestion(randomQuestion);
     setCurrentType(type);
+    setUsedQuestions(prev => ({
+      ...prev,
+      [type]: [...prev[type], randomQuestion]
+    }));
     setShowPlayerModal(false);
     setShowQuestionModal(true);
   };
@@ -75,6 +92,7 @@ const TruthsAndDares = () => {
     setCurrentPlayer(null);
     setShowQuestionModal(false);
     setShowPlayerModal(false);
+    setUsedQuestions({ truth: [], dare: [] });
   };
 
   if (gameState === 'setup') {
@@ -105,6 +123,16 @@ const TruthsAndDares = () => {
                 Couple Mode 💕
               </button>
             </div>
+            {gameMode === 'couple' && (
+              <p style={{ 
+                fontSize: '0.9rem', 
+                opacity: 0.8, 
+                marginTop: '0.5rem',
+                color: '#feca57'
+              }}>
+                🔥 Intimate questions and dares for couples only!
+              </p>
+            )}
           </div>
 
           {/* Input Method Selection */}
@@ -203,6 +231,18 @@ const TruthsAndDares = () => {
           >
             Start Game! 🎮
           </button>
+
+          <div style={{
+            marginTop: '2rem',
+            background: 'rgba(255, 255, 255, 0.1)',
+            padding: '1rem',
+            borderRadius: '15px',
+            fontSize: '0.9rem'
+          }}>
+            <p><strong>Available Questions:</strong></p>
+            <p>Casual Mode: {gameContent.truthsAndDares.casual.truth.length} truths, {gameContent.truthsAndDares.casual.dare.length} dares</p>
+            <p>Couple Mode: {gameContent.truthsAndDares.couple.truth.length} truths, {gameContent.truthsAndDares.couple.dare.length} dares</p>
+          </div>
         </div>
       </div>
     );
@@ -219,7 +259,21 @@ const TruthsAndDares = () => {
 
       <Wheel players={players} onPlayerSelected={handlePlayerSelected} />
 
-      <div style={{ marginTop: '2rem' }}>
+      {/* Stats Display */}
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.1)',
+        padding: '1rem',
+        borderRadius: '15px',
+        marginTop: '2rem',
+        maxWidth: '400px',
+        margin: '2rem auto'
+      }}>
+        <p><strong>Questions Used:</strong></p>
+        <p>Truths: {usedQuestions.truth.length} / {gameContent.truthsAndDares[gameMode].truth.length}</p>
+        <p>Dares: {usedQuestions.dare.length} / {gameContent.truthsAndDares[gameMode].dare.length}</p>
+      </div>
+
+      <div style={{ textAlign: 'center', marginTop: '2rem' }}>
         <button onClick={handleEndGame} className="secondary-button">
           New Game
         </button>

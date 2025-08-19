@@ -1,5 +1,6 @@
 // src/components/GameMenu.jsx
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import GameCard from './GameCard';
 
@@ -44,6 +45,20 @@ const GameMenu = () => {
 
   return (
     <div className="game-menu">
+      {/* Back to Home Button */}
+      <Link 
+        to="/" 
+        className="back-button"
+        style={{
+          position: 'absolute',
+          top: '2rem',
+          left: '2rem',
+          zIndex: 10
+        }}
+      >
+        🏠 Home
+      </Link>
+
       <motion.h1
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
