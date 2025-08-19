@@ -1,17 +1,36 @@
 // src/games/ThirtyOneSeconds.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import Timer from '../components/Timer';
 import { gameContent } from '../data/gameContent';
 
 const ThirtyOneSeconds = () => {
-  const [gameState, setGameState] = useState('setup'); // setup, playing, finished
+  const [gameState, setGameState] = useState('setup'); // setup, playing, scoring
   const [teams, setTeams] = useState([{ name: 'Team A', score: 0 }, { name: 'Team B', score: 0 }]);
   const [currentTeam, setCurrentTeam] = useState(0);
   const [currentCategory, setCurrentCategory] = useState(null);
   const [timerActive, setTimerActive] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(31);
   const [roundsPlayed, setRoundsPlayed] = useState(0);
+  const [completedItems, setCompletedItems] = useState([]);
+  const [showScoring, setShowScoring] = useState(false);
+
+  // Timer logic
+  useEffect(() => {
+    if (!timerActive) return;
+
+    if (timeLeft === 0) {
+      setTimerActive(false);
+      setShowScoring(true);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setTimeLeft(timeLeft - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [timeLeft, timerActive]);
 
   const addTeam = () => {
     const newTeamName = `Team ${String.fromCharCode(65 + teams.length)}`;
@@ -35,30 +54,38 @@ const ThirtyOneSeconds = () => {
     setCurrentCategory(randomCategory);
     setGameState('playing');
     setTimerActive(true);
-  };
-
-  const handleTimeUp = () => {
-    setTimerActive(false);
-    // Auto move to next team after 3 seconds
-    setTimeout(() => {
-      nextTeam();
-    }, 3000);
+    setTimeLeft(31);
+    setCompletedItems([]);
+    setShowScoring(false);
   };
 
   const stopTimer = () => {
     setTimerActive(false);
+    setShowScoring(true);
   };
 
-  const addPoint = () => {
+  const toggleItemCompletion = (itemIndex) => {
+    if (completedItems.includes(itemIndex)) {
+      setCompletedItems(completedItems.filter(index => index !== itemIndex));
+    } else {
+      setCompletedItems([...completedItems, itemIndex]);
+    }
+  };
+
+  const confirmScore = () => {
     const updatedTeams = [...teams];
-    updatedTeams[currentTeam].score += 1;
+    updatedTeams[currentTeam].score += completedItems.length;
     setTeams(updatedTeams);
+    nextTeam();
   };
 
   const nextTeam = () => {
     setGameState('setup');
     setCurrentCategory(null);
     setTimerActive(false);
+    setShowScoring(false);
+    setCompletedItems([]);
+    setTimeLeft(31);
     
     const nextTeamIndex = (currentTeam + 1) % teams.length;
     setCurrentTeam(nextTeamIndex);
@@ -75,6 +102,57 @@ const ThirtyOneSeconds = () => {
     setGameState('setup');
     setCurrentCategory(null);
     setTimerActive(false);
+    setShowScoring(false);
+    setCompletedItems([]);
+    setTimeLeft(31);
+  };
+
+  const TimerDisplay = () => {
+    const percentage = (timeLeft / 31) * 100;
+    const isWarning = timeLeft <= 10;
+
+    return (
+      <div className="timer-right">
+        <motion.div
+          animate={isWarning ? { scale: [1, 1.1, 1] } : { scale: 1 }}
+          transition={{ duration: 0.5, repeat: isWarning ? Infinity : 0 }}
+          style={{
+            width: '100px',
+            height: '100px',
+            borderRadius: '50%',
+            background: `conic-gradient(${isWarning ? '#ff6b6b' : '#48dbfb'} ${percentage * 3.6}deg, rgba(255,255,255,0.2) 0deg)`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1.5rem',
+            fontWeight: 'bold',
+            color: isWarning ? '#ff6b6b' : '#48dbfb',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
+          }}
+        >
+          {timeLeft}
+        </motion.div>
+        
+        <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+          {timerActive && (
+            <button 
+              onClick={stopTimer} 
+              style={{
+                background: '#ff6b6b',
+                color: 'white',
+                border: 'none',
+                borderRadius: '15px',
+                padding: '0.3rem 0.8rem',
+                fontSize: '0.8rem',
+                cursor: 'pointer'
+              }}
+            >
+              Stop
+            </button>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -85,6 +163,8 @@ const ThirtyOneSeconds = () => {
         <h1 className="game-title">⏱️ 31 Seconds</h1>
         <p>Describe 8 items from the category in 31 seconds!</p>
       </div>
+
+      {gameState === 'playing' && <TimerDisplay />}
 
       {/* Scoreboard */}
       <div style={{ 
@@ -178,47 +258,51 @@ const ThirtyOneSeconds = () => {
               Category: {currentCategory.category}
             </h2>
             <p style={{ marginBottom: '1rem', opacity: 0.9 }}>
-              Describe these 8 items to your team:
+              Click items as {teams[currentTeam].name} describes them correctly:
             </p>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-              gap: '0.5rem',
-              marginTop: '1rem'
-            }}>
+
+            <div className="category-items">
               {currentCategory.items.map((item, index) => (
-                <span
+                <button
                   key={index}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    padding: '0.5rem',
-                    borderRadius: '10px',
-                    fontSize: '0.9rem'
-                  }}
+                  className={`category-item ${completedItems.includes(index) ? 'completed' : ''}`}
+                  onClick={() => toggleItemCompletion(index)}
+                  disabled={timerActive && timeLeft > 0}
                 >
                   {item}
-                </span>
+                </button>
               ))}
             </div>
+
+            {!timerActive && timeLeft > 0 && !showScoring && (
+              <p style={{ 
+                marginTop: '1rem', 
+                color: '#feca57',
+                fontWeight: 'bold'
+              }}>
+                Timer stopped! Click items that were described correctly.
+              </p>
+            )}
+
+            {timeLeft === 0 && (
+              <p style={{ 
+                marginTop: '1rem', 
+                color: '#ff6b6b',
+                fontWeight: 'bold',
+                fontSize: '1.2rem'
+              }}>
+                ⏰ Time's Up! Click items that were described correctly.
+              </p>
+            )}
           </motion.div>
 
-          <Timer
-            duration={31}
-            onTimeUp={handleTimeUp}
-            isActive={timerActive}
-            onStop={stopTimer}
-          />
-
-          {!timerActive && (
+          {showScoring && (
             <div style={{ marginTop: '2rem' }}>
-              <p style={{ marginBottom: '1rem' }}>
-                How many items did {teams[currentTeam].name} get correct?
+              <p style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>
+                {teams[currentTeam].name} got <strong>{completedItems.length}</strong> out of 8 items correct!
               </p>
-              <button onClick={addPoint} className="primary-button">
-                +1 Point
-              </button>
-              <button onClick={nextTeam} className="secondary-button">
-                Next Team
+              <button onClick={confirmScore} className="primary-button">
+                Confirm Score & Continue
               </button>
             </div>
           )}

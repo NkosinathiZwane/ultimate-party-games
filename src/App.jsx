@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
 import GameMenu from './components/GameMenu';
 import TruthsAndDares from './games/TruthsAndDares';
@@ -23,7 +23,6 @@ function App() {
       setIsAgeVerified(true);
       setShowAgeModal(false);
     } else {
-      // Redirect to a safe page or show appropriate message
       window.location.href = 'https://www.google.com';
     }
   };
@@ -51,16 +50,37 @@ function App() {
               </>
             } 
           />
-          {isAgeVerified && (
-            <>
-              <Route path="/menu" element={<GameMenu onReset={resetAgeVerification} />} />
-              <Route path="/truths-and-dares" element={<TruthsAndDares />} />
-              <Route path="/31-seconds" element={<ThirtyOneSeconds />} />
-              <Route path="/6-seconds" element={<SixSeconds />} />
-              <Route path="/do-or-drink" element={<DoOrDrink />} />
-              <Route path="/this-or-that" element={<ThisOrThat />} />
-            </>
-          )}
+
+          <Route 
+            path="/menu" 
+            element={
+              isAgeVerified ? (
+                <GameMenu onReset={resetAgeVerification} />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } 
+          />
+          <Route 
+            path="/truths-and-dares" 
+            element={isAgeVerified ? <TruthsAndDares /> : <Navigate to="/" replace />} 
+          />
+          <Route 
+            path="/31-seconds" 
+            element={isAgeVerified ? <ThirtyOneSeconds /> : <Navigate to="/" replace />} 
+          />
+          <Route 
+            path="/6-seconds" 
+            element={isAgeVerified ? <SixSeconds /> : <Navigate to="/" replace />} 
+          />
+          <Route 
+            path="/do-or-drink" 
+            element={isAgeVerified ? <DoOrDrink /> : <Navigate to="/" replace />} 
+          />
+          <Route 
+            path="/this-or-that" 
+            element={isAgeVerified ? <ThisOrThat /> : <Navigate to="/" replace />} 
+          />
         </Routes>
       </div>
     </Router>

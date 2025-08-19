@@ -2,23 +2,32 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import GameModeModal from '../components/GameModeModal';
 import { gameContent } from '../data/gameContent';
 
 const DoOrDrink = () => {
+  const [gameState, setGameState] = useState('mode-selection'); // mode-selection, playing
+  const [gameMode, setGameMode] = useState('casual');
   const [currentChallenge, setCurrentChallenge] = useState('');
   const [showChallenge, setShowChallenge] = useState(false);
   const [challengeCount, setChallengeCount] = useState(0);
   const [usedChallenges, setUsedChallenges] = useState([]);
 
+  const handleModeSelection = (mode) => {
+    setGameMode(mode);
+    setGameState('playing');
+  };
+
   const getRandomChallenge = () => {
-    const availableChallenges = gameContent.doOrDrink.filter(
+    const challenges = gameContent.doOrDrink[gameMode] || gameContent.doOrDrink;
+    const availableChallenges = challenges.filter(
       challenge => !usedChallenges.includes(challenge)
     );
     
     if (availableChallenges.length === 0) {
       // Reset used challenges if we've gone through all
       setUsedChallenges([]);
-      return gameContent.doOrDrink[Math.floor(Math.random() * gameContent.doOrDrink.length)];
+      return challenges[Math.floor(Math.random() * challenges.length)];
     }
     
     return availableChallenges[Math.floor(Math.random() * availableChallenges.length)];
@@ -51,13 +60,88 @@ const DoOrDrink = () => {
     setUsedChallenges([]);
   };
 
+  const backToModeSelection = () => {
+    setGameState('mode-selection');
+    resetGame();
+  };
+
+  if (gameState === 'mode-selection') {
+    return (
+      <div className="game-screen">
+        <Link to="/menu" className="back-button">← Back to Menu</Link>
+        
+        <div className="game-header">
+          <h1 className="game-title">🍹 Do or Drink</h1>
+          <p>Choose your game mode to get started!</p>
+        </div>
+
+        <div style={{ maxWidth: '500px', margin: '0 auto', textAlign: 'center' }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              padding: '3rem 2rem',
+              borderRadius: '25px',
+              marginBottom: '2rem'
+            }}
+          >
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🍹</div>
+            <h2 style={{ marginBottom: '2rem', color: '#feca57' }}>
+              Choose Your Adventure
+            </h2>
+            
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleModeSelection('casual')}
+                className="primary-button"
+                style={{ minWidth: '180px', padding: '1.2rem 2rem' }}
+              >
+                😊 Casual Mode
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleModeSelection('couple')}
+                className="secondary-button"
+                style={{ minWidth: '180px', padding: '1.2rem 2rem' }}
+              >
+                💕 Couple Mode
+              </motion.button>
+            </div>
+            
+            <div style={{ 
+              marginTop: '2rem', 
+              fontSize: '0.9rem', 
+              opacity: 0.8,
+              lineHeight: '1.5'
+            }}>
+              <p><strong>Casual Mode:</strong> Fun challenges for friends and groups</p>
+              <p><strong>Couple Mode:</strong> Intimate challenges for couples and romantic partners</p>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="game-screen">
       <Link to="/menu" className="back-button">← Back to Menu</Link>
       
       <div className="game-header">
         <h1 className="game-title">🍹 Do or Drink</h1>
-        <p>Face the challenge or take a sip - your choice!</p>
+        <p>Mode: {gameMode === 'casual' ? 'Casual 😊' : 'Couple 💕'} | Face the challenge or take a sip!</p>
+        <button 
+          onClick={backToModeSelection}
+          className="secondary-button"
+          style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
+        >
+          Change Mode
+        </button>
       </div>
 
       {/* Game Stats */}
@@ -68,7 +152,7 @@ const DoOrDrink = () => {
       }}>
         <p>Challenges completed: <strong>{challengeCount}</strong></p>
         {usedChallenges.length > 0 && (
-          <p>Remaining challenges: <strong>{gameContent.doOrDrink.length - usedChallenges.length}</strong></p>
+          <p>Remaining challenges: <strong>{(gameContent.doOrDrink[gameMode] || gameContent.doOrDrink).length - usedChallenges.length}</strong></p>
         )}
       </div>
 
@@ -199,25 +283,6 @@ const DoOrDrink = () => {
                     fontSize: '1.1rem',
                     fontWeight: 'bold',
                     background: 'linear-gradient(45deg, #48dbfb, #0abde3)',
-                    border: 'none',
-                    borderRadius: '25px',
-                    color: 'white',
-                    cursor: 'pointer',
-                    minWidth: '150px'
-                  }}
-                >
-                  💪 I'll Do It!
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleAction('drink')}
-                  style={{
-                    padding: '1rem 2rem',
-                    fontSize: '1.1rem',
-                    fontWeight: 'bold',
-                    background: 'linear-gradient(45deg, #ff6b6b, #ee5a24)',
                     border: 'none',
                     borderRadius: '25px',
                     color: 'white',

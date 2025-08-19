@@ -5,10 +5,11 @@ import { motion } from 'framer-motion';
 import Wheel from '../components/Wheel';
 import PlayerResultModal from '../components/PlayerResultModal';
 import QuestionModal from '../components/QuestionModal';
+import GameModeModal from '../components/GameModeModal';
 import { gameContent } from '../data/gameContent';
 
 const TruthsAndDares = () => {
-  const [gameState, setGameState] = useState('setup'); // setup, playing
+  const [gameState, setGameState] = useState('mode-selection'); // mode-selection, setup, playing
   const [players, setPlayers] = useState([]);
   const [gameMode, setGameMode] = useState('casual'); // casual, couple
   const [inputMethod, setInputMethod] = useState('names'); // names, numbers
@@ -21,8 +22,13 @@ const TruthsAndDares = () => {
   const [currentType, setCurrentType] = useState('');
   const [usedQuestions, setUsedQuestions] = useState({ truth: [], dare: [] });
 
+  const handleModeSelection = (mode) => {
+    setGameMode(mode);
+    setGameState('setup');
+  };
+
   const addPlayer = () => {
-    if (playerInput.trim() && !players.includes(playerInput.trim())) {
+    if (playerInput.trim() && !players.includes(playerInput.trim()) && players.length < 50) {
       setPlayers([...players, playerInput.trim()]);
       setPlayerInput('');
     }
@@ -55,6 +61,12 @@ const TruthsAndDares = () => {
   };
 
   const getRandomQuestion = (type) => {
+    // Add safety check for gameContent
+    if (!gameContent?.truthsAndDares?.[gameMode]?.[type]) {
+      console.warn(`No ${type} questions found for ${gameMode} mode`);
+      return `Sample ${type} question - please check your gameContent.js file`;
+    }
+
     const questions = gameContent.truthsAndDares[gameMode][type];
     const availableQuestions = questions.filter(q => !usedQuestions[type].includes(q));
     
@@ -88,12 +100,82 @@ const TruthsAndDares = () => {
   };
 
   const handleEndGame = () => {
-    setGameState('setup');
+    setGameState('mode-selection');
+    setPlayers([]);
     setCurrentPlayer(null);
     setShowQuestionModal(false);
     setShowPlayerModal(false);
     setUsedQuestions({ truth: [], dare: [] });
   };
+
+  const backToModeSelection = () => {
+    setGameState('mode-selection');
+    setPlayers([]);
+    setUsedQuestions({ truth: [], dare: [] });
+  };
+
+  if (gameState === 'mode-selection') {
+    return (
+      <div className="game-screen">
+        <Link to="/menu" className="back-button">← Back to Menu</Link>
+        
+        <div className="game-header">
+          <h1 className="game-title">🎭 Truths & Dares</h1>
+          <p>Choose your game mode to get started!</p>
+        </div>
+
+        <div style={{ maxWidth: '500px', margin: '0 auto', textAlign: 'center' }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              padding: '3rem 2rem',
+              borderRadius: '25px',
+              marginBottom: '2rem'
+            }}
+          >
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎭</div>
+            <h2 style={{ marginBottom: '2rem', color: '#feca57' }}>
+              Choose Your Adventure
+            </h2>
+            
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleModeSelection('casual')}
+                className="primary-button"
+                style={{ minWidth: '180px', padding: '1.2rem 2rem' }}
+              >
+                😊 Casual Mode
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleModeSelection('couple')}
+                className="secondary-button"
+                style={{ minWidth: '180px', padding: '1.2rem 2rem' }}
+              >
+                💕 Couple Mode
+              </motion.button>
+            </div>
+            
+            <div style={{ 
+              marginTop: '2rem', 
+              fontSize: '0.9rem', 
+              opacity: 0.8,
+              lineHeight: '1.5'
+            }}>
+              <p><strong>Casual Mode:</strong> Fun questions for friends and groups</p>
+              <p><strong>Couple Mode:</strong> Intimate questions for couples and romantic partners</p>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   if (gameState === 'setup') {
     return (
@@ -102,39 +184,17 @@ const TruthsAndDares = () => {
         
         <div className="game-header">
           <h1 className="game-title">🎭 Truths & Dares</h1>
-          <p>The classic party game that reveals secrets and creates memories!</p>
+          <p>Mode: {gameMode === 'casual' ? 'Casual 😊' : 'Couple 💕'}</p>
+          <button 
+            onClick={backToModeSelection}
+            className="secondary-button"
+            style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
+          >
+            Change Mode
+          </button>
         </div>
 
         <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-          {/* Game Mode Selection */}
-          <div style={{ marginBottom: '2rem' }}>
-            <h3 style={{ marginBottom: '1rem' }}>Choose Game Mode:</h3>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-              <button
-                onClick={() => setGameMode('casual')}
-                className={gameMode === 'casual' ? 'primary-button' : 'secondary-button'}
-              >
-                Casual Mode 😊
-              </button>
-              <button
-                onClick={() => setGameMode('couple')}
-                className={gameMode === 'couple' ? 'primary-button' : 'secondary-button'}
-              >
-                Couple Mode 💕
-              </button>
-            </div>
-            {gameMode === 'couple' && (
-              <p style={{ 
-                fontSize: '0.9rem', 
-                opacity: 0.8, 
-                marginTop: '0.5rem',
-                color: '#feca57'
-              }}>
-                🔥 Intimate questions and dares for couples only!
-              </p>
-            )}
-          </div>
-
           {/* Input Method Selection */}
           <div style={{ marginBottom: '2rem' }}>
             <h3 style={{ marginBottom: '1rem' }}>Player Setup:</h3>
@@ -163,14 +223,24 @@ const TruthsAndDares = () => {
                     onChange={(e) => setPlayerInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
                     className="input-field"
+                    maxLength={20}
                   />
                   <button onClick={addPlayer} className="primary-button">Add</button>
                 </div>
                 
                 {players.length > 0 && (
                   <div style={{ marginBottom: '1rem' }}>
-                    <h4>Players ({players.length}):</h4>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center', marginTop: '0.5rem' }}>
+                    <h4>Players ({players.length}/50):</h4>
+                    <div style={{ 
+                      display: 'flex', 
+                      flexWrap: 'wrap', 
+                      gap: '0.5rem', 
+                      justifyContent: 'center', 
+                      marginTop: '0.5rem',
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      padding: '0.5rem'
+                    }}>
                       {players.map((player, index) => (
                         <span
                           key={index}
@@ -180,7 +250,8 @@ const TruthsAndDares = () => {
                             borderRadius: '20px',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.5rem'
+                            gap: '0.5rem',
+                            fontSize: '0.9rem'
                           }}
                         >
                           {player}
@@ -191,7 +262,8 @@ const TruthsAndDares = () => {
                               border: 'none',
                               color: '#ff6b6b',
                               cursor: 'pointer',
-                              fontWeight: 'bold'
+                              fontWeight: 'bold',
+                              fontSize: '1rem'
                             }}
                           >
                             ×
@@ -200,6 +272,12 @@ const TruthsAndDares = () => {
                       ))}
                     </div>
                   </div>
+                )}
+                
+                {players.length >= 50 && (
+                  <p style={{ color: '#feca57', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                    Maximum of 50 players reached!
+                  </p>
                 )}
               </div>
             ) : (
@@ -210,27 +288,53 @@ const TruthsAndDares = () => {
                 <input
                   type="range"
                   min="2"
-                  max="20"
+                  max="50"
                   value={playerCount}
                   onChange={(e) => setPlayerCount(parseInt(e.target.value))}
                   style={{ width: '100%', marginBottom: '1rem' }}
                 />
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  fontSize: '0.8rem', 
+                  opacity: 0.7 
+                }}>
+                  <span>2 players</span>
+                  <span>50 players</span>
+                </div>
               </div>
             )}
           </div>
 
           <button
             onClick={startGame}
-            disabled={inputMethod === 'names' && players.length < 2}
+            disabled={
+              (inputMethod === 'names' && players.length < 2) ||
+              (inputMethod === 'names' && players.length === 0)
+            }
             className="primary-button"
             style={{ 
               fontSize: '1.2rem', 
               padding: '1rem 2rem',
-              opacity: (inputMethod === 'names' && players.length < 2) ? 0.5 : 1
+              opacity: (
+                (inputMethod === 'names' && players.length < 2) ||
+                (inputMethod === 'names' && players.length === 0)
+              ) ? 0.5 : 1
             }}
           >
             Start Game! 🎮
           </button>
+
+          {inputMethod === 'names' && players.length < 2 && (
+            <p style={{ 
+              color: '#ff6b6b', 
+              fontSize: '0.9rem', 
+              marginTop: '1rem',
+              opacity: 0.8
+            }}>
+              Add at least 2 players to start the game
+            </p>
+          )}
 
           <div style={{
             marginTop: '2rem',
@@ -239,9 +343,15 @@ const TruthsAndDares = () => {
             borderRadius: '15px',
             fontSize: '0.9rem'
           }}>
-            <p><strong>Available Questions:</strong></p>
-            <p>Casual Mode: {gameContent.truthsAndDares.casual.truth.length} truths, {gameContent.truthsAndDares.casual.dare.length} dares</p>
-            <p>Couple Mode: {gameContent.truthsAndDares.couple.truth.length} truths, {gameContent.truthsAndDares.couple.dare.length} dares</p>
+            <p><strong>Game Mode: {gameMode === 'casual' ? 'Casual 😊' : 'Couple 💕'}</strong></p>
+            {gameContent?.truthsAndDares?.[gameMode] ? (
+              <>
+                <p>Truths: {gameContent.truthsAndDares[gameMode].truth?.length || 0}</p>
+                <p>Dares: {gameContent.truthsAndDares[gameMode].dare?.length || 0}</p>
+              </>
+            ) : (
+              <p>Loading game content...</p>
+            )}
           </div>
         </div>
       </div>
@@ -269,8 +379,14 @@ const TruthsAndDares = () => {
         margin: '2rem auto'
       }}>
         <p><strong>Questions Used:</strong></p>
-        <p>Truths: {usedQuestions.truth.length} / {gameContent.truthsAndDares[gameMode].truth.length}</p>
-        <p>Dares: {usedQuestions.dare.length} / {gameContent.truthsAndDares[gameMode].dare.length}</p>
+        {gameContent?.truthsAndDares?.[gameMode] ? (
+          <>
+            <p>Truths: {usedQuestions.truth.length} / {gameContent.truthsAndDares[gameMode].truth?.length || 0}</p>
+            <p>Dares: {usedQuestions.dare.length} / {gameContent.truthsAndDares[gameMode].dare?.length || 0}</p>
+          </>
+        ) : (
+          <p>Loading game statistics...</p>
+        )}
       </div>
 
       <div style={{ textAlign: 'center', marginTop: '2rem' }}>
